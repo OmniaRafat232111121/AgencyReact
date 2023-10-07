@@ -2,7 +2,9 @@
 
 import { Carousel } from 'flowbite-react';
 import banner from '../assets/images/banner1.png'
+import { useTranslation } from 'react-i18next';
 const Home = () => {
+  const { t } = useTranslation();
   return (
     <div className="bg-[#F5F7FA]">
       <div className="  h-screen min-h-screen max-w-screen-2xl mx-auto">
@@ -14,17 +16,15 @@ const Home = () => {
           <img src={banner} alt="banner1"/>
         </div>
         <div className='md:w-1/2'>
-          <h1 className='text-5xl font-semibold mb-4 text-naturalGray leading-snug
-           md:w-[600px]
-          '>
-         
-            Lessons and insights 
-            {" "}
-            {" "}
-          <span className='text-green leading-snug'>from 8 years </span> 
-          </h1>
-          <p className='text-naturalGray text-base text-[1rem] mb-8'>Where to grow your business as a photographer: site or social media?</p>
-          <button className='btn-primary'>Register </button>
+        
+
+<h1 className='text-5xl font-semibold mb-4 text-naturalGray leading-snug md:w-[600px]'>
+  {t('home.banner.title')}
+</h1>
+<p className='text-naturalGray text-base text-[1rem] mb-8'>
+  {t('home.banner.description')}
+</p>
+<button className='btn-primary'>{t('home.banner.buttonText')}</button>
 
         </div>
        </div>
@@ -38,18 +38,14 @@ const Home = () => {
           <img src={banner} alt="banner1"/>
         </div>
         <div className='md:w-1/2'>
-          <h1 className='text-5xl font-semibold mb-4 text-naturalGray leading-snug
-           md:w-[600px]
-          '>
-         
-            Lessons and insights 
-            {" "}
-            {" "}
-          <span className='text-green leading-snug'>from 8 years </span> 
-          </h1>
-          <p className='text-naturalGray text-base text-[1rem] mb-8'>Where to grow your business as a photographer: site or social media?</p>
-          <button className='btn-primary'>Register </button>
-
+          
+<h1 className='text-5xl font-semibold mb-4 text-naturalGray leading-snug md:w-[600px]'>
+  {t('home.banner.title')}
+</h1>
+<p className='text-naturalGray text-base text-[1rem] mb-8'>
+  {t('home.banner.description')}
+</p>
+<button className='btn-primary'>{t('home.banner.buttonText')}</button>
         </div>
        </div>
       </div>
@@ -62,17 +58,14 @@ const Home = () => {
           <img src={banner} alt="banner1"/>
         </div>
         <div className='md:w-1/2'>
-          <h1 className='text-5xl font-semibold mb-4 text-naturalGray leading-snug
-           md:w-[600px]
-          '>
-         
-            Lessons and insights 
-            {" "}
-            {" "}
-          <span className='text-green leading-snug'>from 8 years </span> 
-          </h1>
-          <p className='text-naturalGray text-base text-[1rem] mb-8'>Where to grow your business as a photographer: site or social media?</p>
-          <button className='btn-primary'>Register </button>
+          
+<h1 className='text-5xl font-semibold mb-4 text-naturalGray leading-snug md:w-[600px]'>
+  {t('home.banner.title')}
+</h1>
+<p className='text-naturalGray text-base text-[1rem] mb-8'>
+  {t('home.banner.description')}
+</p>
+<button className='btn-primary'>{t('home.banner.buttonText')}</button>
 
         </div>
        </div>

@@ -1,0 +1,45 @@
+{
+  "description.part2": "ترجم نصك هنا",
+  "login": "تسجيل الدخول",
+  "signup": "التسجيل",
+  "Home": "الصفحة الرئيسية",
+  "Services": "الخدمات",
+  "About": "عن الشركة",
+  "Product": "المنتج",
+  "Testimonials": "الشهادات",
+  "FAQ": "الأسئلة الشائعة",
+  "home.banner.title": "دروس وإلهام",
+  "home.banner.description": "أين تنمية عملك كمصور: الموقع أم وسائل التواصل الاجتماعي؟",
+  "home.banner.buttonText": "تسجيل",
+  "about.heading": "ما لا يُرى خلال ثلاث سنوات في Pixelgrade",
+  "about.description": "التواصل بكفاءة وإنشاء المحتوى معًا والعمل معًا",
+  "about.buttonText": "تعلم المزيد",
+  "footer.company": "الشركة",
+  "footer.aboutUs": "عنا",
+  "footer.contactUs": "اتصل بنا",
+  "footer.pricing": "الأسعار",
+  "footer.testimonials": "شهادات العملاء",
+  "footer.support": "الدعم",
+  "footer.helpCenter": "مركز المساعدة",
+  "footer.termsOfService": "شروط الخدمة",
+  "footer.legal": "القانونية",
+  "footer.privacyPolicy": "سياسة الخصوصية",
+  "footer.status": "الحالة",
+  "footer.stayUpToDate": "ابق مُحدّثاً",
+  "footer.emailPlaceholder": "أدخل بريدك الإلكتروني",
+  "footer.copyright": "حقوق النشر © 2020 Nexcent Ltd.",
+  "footer.allRightsReserved": "كل الحقوق محفوظة",
+  "news.title": "بيلينتيسكي سوسيبيت فرينجيلا ليبيرو إيو.",
+  "news.getDemo": "احصل على عرض توضيحي",
+
+  "Membership Organisations": "منظمات العضوية",
+  "National Associations": "الجمعيات الوطنية",
+  "Clubs And Groups": "الأندية والمجموعات",
+  "Our Clients": "عملاؤنا",
+  " We have been working with some Fortune 500+ clients ": 
+  "لقد عملنا مع بعض عملائنا ذوي الفورتشن 500 ",
+  "Manage your entire community in a single system": "إدارة مجتمعك بأكمله في نظام واحد"
+
+
+
+}

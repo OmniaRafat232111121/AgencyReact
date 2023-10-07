@@ -1,6 +1,10 @@
 import pana from '../assets/images/pana.png'
 import coll from '../assets/images/coll.png'
+import { useTranslation } from 'react-i18next';
+
 const About = () => {
+  const { t } = useTranslation();
+
   return (
     <div>
 
@@ -10,11 +14,14 @@ const About = () => {
           <img src={coll} alt="about1"/>
         </div>
         <div className='md:w-3/5 mx-auto'>
-          <h2 className='text-[2.25rem] text-[#4D4D4D] font-semibold'>The unseen of spending three years at Pixelgrade</h2>
-          <p className='text-[0.875rem] text-[naturalGray] md:w-3/4 mb-8'>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed sit amet justo ipsum. Sed accumsan quam vitae est varius fringilla. Pellentesque placerat vestibulum lorem sed porta. Nullam mattis tristique iaculis. Nullam pulvinar sit amet risus pretium auctor. Etiam quis massa pulvinar, aliquam quam vitae, tempus sem. Donec elementum pulvinar odio.
-          </p>          
-           <button className='btn-primary'>Learn more</button>
+        <h2 className='text-[2.25rem] text-[#4D4D4D] font-semibold'>
+  {t('about.heading')}
+</h2>
+<p className='text-[0.875rem] text-[naturalGray] md:w-3/4 mb-8'>
+  {t('about.description')}
+</p>
+<button className='btn-primary'>{t('about.buttonText')}</button>
+
         </div>
         </div>
       </div>

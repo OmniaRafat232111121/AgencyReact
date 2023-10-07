@@ -1,0 +1,48 @@
+{
+  "description.part2": "Translate your text here",
+  "login": "Login",
+  "signup": "Sign up",
+  "Home": "Home",
+  "Services": "Services",
+  "About": "About",
+  "Product": "Product",
+  "Testimonials": "Testimonials",
+  "FAQ": "FAQ",
+  "home.banner.title": "Lessons and insights",
+  "home.banner.description": "Where to grow your business as a photographer: site or social media?",
+  "home.banner.buttonText": "Register",
+ 
+    "about.heading": "The unseen of spending three years at Pixelgrade",
+    "about.description": "Communicate efficiently, create content together and work together",
+    "about.buttonText": "Learn more",
+    "footer.company": "Company",
+    "footer.aboutUs": "About us",
+    "footer.contactUs": "Contact us",
+    "footer.pricing": "Pricing",
+    "footer.testimonials": "Testimonials",
+    "footer.support": "Support",
+    "footer.helpCenter": "Help center",
+    "footer.termsOfService": "Terms of service",
+    "footer.legal": "Legal",
+    "footer.privacyPolicy": "Privacy policy",
+    "footer.status": "Status",
+    "footer.emailPlaceholder": "enter your email",
+    "footer.copyright": "Copyright © 2020 Nexcent Ltd.",
+  "footer.allRightsReserved": "All rights reserved",
+  "footer.stayUpToDate": "Stay up to date",
+  "news.title": "Pellentesque suscipit fringilla libero eu.",
+  "news.getDemo": "Get a demo",
+  "Our Clients": "Our Clients",
+  "We have been working with some Fortune 500+ clients": 
+  "We have been working with some Fortune 500+ clients",
+  "Manage your entire community in a single system": "Manage your entire community in a single system",
+  "Who is Nextcent suitable for?": "Who is Nextcent suitable for?",
+  "Membership Organisations": "Membership Organisations",
+  "Our membership management software provides full automation of membership renewals and payments": "Our membership management software provides full automation of membership renewals and payments",
+  "National Associations": "National Associations",
+  "Clubs And Groups": "Clubs And Groups"
+
+
+    
+  
+}
