@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import  { useState } from 'react';
 import DataTable from 'react-data-table-component';
 import { FiSearch } from 'react-icons/fi';
@@ -21,8 +20,11 @@ const DataTableComponent = () => {
   };
 
   // Extract unique target_url values from the data
-  const uniqueTargetUrls = [...new Set(data.map((item) => item.target_url))];
-
+  const uniqueTargetUrls = [...new Set(data.map((item) => {
+    // Apply regex to modify the URLs as needed
+    const modifiedURL = item.target_url.replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/$/, '');
+    return modifiedURL;
+  }))];
   // Function to handle target_url filter change
   const handleTargetUrlFilterChange = (e) => {
     const targetUrl = e.target.value;
@@ -135,7 +137,7 @@ const DataTableComponent = () => {
     className="border rounded-md py-1 w-[70%]
      px-2 focus:outline-none focus:ring focus:border-blue-300"
   >
-    <option value="">All Target URLs</option>
+    <option value="">All Sources</option>
     {uniqueTargetUrls.map((url) => (
       <option key={url} value={url}>
         {url}
