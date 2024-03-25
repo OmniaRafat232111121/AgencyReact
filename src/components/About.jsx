@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from 'react';
 import DataTable from 'react-data-table-component';
 import Select from 'react-select';
@@ -65,7 +64,36 @@ const Projectranks = () => {
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const [showBookmarkSelector, setShowBookmarkSelector] = useState(false);
- 
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [hoveredRowId, setHoveredRowId] = useState(null);
+  const mainOptionsRef = useRef(null);
+  const bookmarksRef = useRef(null);
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // Close main options menu if click is outside
+      if (mainOptionsRef.current && !mainOptionsRef.current.contains(event.target)) {
+        setShowMainOptions(false);
+      }
+      // Close bookmarks submenu if click is outside
+      if (bookmarksRef.current && !bookmarksRef.current.contains(event.target)) {
+        setShowBookmarkSelector(false);
+      }
+    }
+  
+    // Attach the listener to the document
+    document.addEventListener("mousedown", handleClickOutside);
+  
+    return () => {
+      // Clean up the listener when the component unmounts
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+    
+  // Function to toggle the visibility of the tooltip
+  const toggleTooltip = () => {
+    setShowTooltip(!showTooltip);
+  };
+
   const locationImages = {
     US: USA,
     EG: EGYPT,
@@ -130,6 +158,10 @@ const Projectranks = () => {
     }
   }, [completedAdds, addErrors, totalAdds, showAddProgressBar]); // Dependencies include the add operation state and the visibility of the add progress bar
 
+// utils.js
+const truncateText = (text, maxLength = 15) => {
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+};
 
 
 
@@ -866,28 +898,68 @@ const extractDomainName = (url) => {
 
   };
 
-  const handleSelectRow = (row, event) => {
-    // Toggle row selection based on Ctrl key press
-    setSelectedRows((prevSelectedRows) => {
-      const rowIndex = prevSelectedRows.findIndex((r) => r.query_id === row.query_id);
 
-      if (event.ctrlKey) {
-        // Ctrl key is pressed, toggle the row selection
-        if (rowIndex >= 0) {
-          // Row is already selected, remove it from the selection
-          return [
-            ...prevSelectedRows.slice(0, rowIndex),
-            ...prevSelectedRows.slice(rowIndex + 1),
-          ];
-        } else {
-          // Row is not selected, add it to the selection
-          return [...prevSelectedRows, row];
-        }
+  const [lastSelectedIndex, setLastSelectedIndex] = useState(null); // Track the last selected row's index
+
+  const handleRowInteraction = (row, event, rowIndex) => {
+   
+    const currentId = row.query_id;
+
+  if (event.shiftKey && lastSelectedIndex !== null) {
+    const start = Math.min(lastSelectedIndex, rowIndex);
+    const end = Math.max(lastSelectedIndex, rowIndex);
+    const rowsInRange = filteredData.slice(start, end + 1);
+    const rowIdsInRange = rowsInRange.map(r => r.query_id);
+
+    // Determine if we are selecting or deselecting based on the state of the first clicked row
+    const isSelecting = !checkedRows.includes(currentId);
+
+    // Update checkedRows
+    let newCheckedRows;
+    if (isSelecting) {
+      // Add all rowIdsInRange to checkedRows
+      newCheckedRows = [...new Set([...checkedRows, ...rowIdsInRange])];
+    } else {
+      // Remove all rowIdsInRange from checkedRows
+      newCheckedRows = checkedRows.filter(id => !rowIdsInRange.includes(id));
+    }
+    setCheckedRows(newCheckedRows);
+
+    // Update selectedRows similarly
+    let newSelectedRows;
+    if (isSelecting) {
+      // Add all rows in the range to selectedRows
+      newSelectedRows = [...new Set([...selectedRows, ...rowsInRange])];
+    } else {
+      // Remove all rows in the range from selectedRows
+      newSelectedRows = selectedRows.filter(selectedRow => !rowIdsInRange.includes(selectedRow.query_id));
+    }
+    setSelectedRows(newSelectedRows);
+    } 
+    else if (event.ctrlKey || event.metaKey) {
+      // Ctrl/Cmd key is pressed, toggle the row selection
+      const isSelected = selectedRows.some(r => r.query_id === currentId);
+      const isChecked = checkedRows.includes(currentId);
+  
+      if (isSelected) {
+        setSelectedRows(prevSelectedRows => prevSelectedRows.filter(r => r.query_id !== currentId));
       } else {
-        // Ctrl key is not pressed, set the row as the only selected row
-        return [row];
+        setSelectedRows(prevSelectedRows => [...prevSelectedRows, row]);
       }
-    });
+  
+      // Toggle checked state based on whether it's already checked
+      if (isChecked) {
+        setCheckedRows(prevCheckedRows => prevCheckedRows.filter(id => id !== currentId));
+      } else {
+        setCheckedRows(prevCheckedRows => [...prevCheckedRows, currentId]);
+      }
+    } else {
+      // No modifier key is pressed, select only the clicked row
+      setSelectedRows([row]);
+    }
+  
+    // Update the lastSelectedIndex with the current row index
+    setLastSelectedIndex(rowIndex);
   };
 
   const handleDragStart = (e) => {
@@ -1246,6 +1318,7 @@ const handleCheckboxChange = (queryId, isChecked) => {
 
 
 const handleAddToBookmark = async (bookmarkId) => {
+console.log(showBookmarkSelector)
   let successCount = 0; // Initialize a counter for successful additions
 
   for (const queryId of checkedRows) {
@@ -1283,13 +1356,39 @@ const handleAddToBookmark = async (bookmarkId) => {
 
   setCheckedRows([]); // Reset the selection after the operation
 };
-const [selectedOption, setSelectedOption] = useState(null);
 
+const [selectedOption, setSelectedOption] = useState(null);
 const options = [
-  { value: 'update', label: 'Update Query' },
-  { value: 'delete', label: 'Delete Query' },
-  { value: 'add', label: 'Add to Bookmark' , className:'testtesttest'}
+  { value: 'update', label: 'Update query' },
+  { value: 'delete', label: 'Delete qery' },
+  { value: 'add', label: 'Add to Bookamrk', submenu: displayBookmarkSlice },
+
 ];
+
+const [selectedMainOption, setSelectedMainOption] = useState(null);
+const [showMainOptions, setShowMainOptions] = useState(false);
+
+const handleChange = (selectedOption) => {
+  setSelectedOption(selectedOption);
+  if (selectedOption.value === 'add') {
+    setShowBookmarkSelector(true); // Show submenu for adding bookmarks
+  } else {
+    setShowBookmarkSelector(false); // Hide submenu if not Add option
+    handleBulkAction(selectedOption.value);
+  }
+};
+const handleMainOptionClick = (option) => {
+  setSelectedMainOption(option);
+  if (option.submenu) {
+    setShowBookmarkSelector(true); // Assuming this shows the bookmarks submenu
+  } else {
+    // Handle other actions directly here
+    handleBulkAction(option.value);
+  }
+  setShowMainOptions(false); // Hide the main options menu after selection
+};
+
+
 
 const customStyles = {
   control: (provided, state) => ({
@@ -1299,7 +1398,7 @@ const customStyles = {
     boxShadow: state.isFocused ? '0 0 0 1px gray' : 'none',
     '&:hover': { borderColor: 'lightgray' },
     zIndex: state.isFocused ? '5' : '1', 
-    width:'360px'
+    width:'450px'
   }),
   option: (provided, state) => ({
     ...provided,
@@ -1309,17 +1408,21 @@ const customStyles = {
   })
 };
 
-const handleChange = (selectedOption) => {
-  setSelectedOption(selectedOption);
-  handleBulkAction(selectedOption.value);
-};
+// const handleChange = (selectedOption) => {
+//   setSelectedOption(selectedOption);
+//   handleBulkAction(selectedOption.value);
+// };
+
 const bookmarkSelectorRef = useRef(null);
-console.log(bookmarkSelectorRef)
-  useOutsideClick(bookmarkSelectorRef, () => {
-    console.log("Outside click detected");
-    setShowBookmarkSelector(false);
-  
-});
+const closeBookmarkSelector = () => {
+  setShowBookmarkSelector(false);
+  console.log(showBookmarkSelector)
+};
+
+
+
+// Use the hook
+useOutsideClick(bookmarkSelectorRef, closeBookmarkSelector);
   return (
     <>
 
@@ -1581,52 +1684,53 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
         <div className='flex justify-between w-[78%] space-x-[50px]'> {/* Adjust the gap as needed */}
       <div>
 
-<div className='flex space-x-3 '>
-<Select
+      <div className='flex flex-col space-y-3'>
+
+
+  <div className='flex space-x-3'>
+    <Select
       value={selectedOption}
       onChange={handleChange}
       options={options}
       styles={customStyles}
       placeholder="Select Action"
-      isSearchable={false} // Set to true if you want to enable search
+      isSearchable={false}
     />
-<button
-  onClick={() => handleBulkAction(selectedBulkAction)}
-  disabled={!selectedBulkAction}
-  className={` w-[40px]  p-4 text-white bg-blue rounded`}
->
-  Go
-</button> 
+    <button
+      onClick={() => setShowMainOptions(true)}
+      className={`w-[200px] text-white bg-blue rounded`}
+    >
+      Go
+    </button>
+
+    
+
+    {showBookmarkSelector && (
+      <div
+      ref={bookmarksRef} 
+       className={`absolute left-[5px]  z-50 mt-[50px] bg-white rounded-md w-[450px] border border-gray-300`}>
+        <div className="py-1">
+          {displayBookmarkSlice.map((bookmark, index) => (
+            <div 
+              key={bookmark.id}
+              className={`block w-full p-2 text-sm text-left 
+              ${index !== displayBookmarkSlice.length - 1 ? 'border-b' : ''} cursor-pointer hover:bg-gray-200`}
+              onClick={() => handleAddToBookmark(bookmark.b_id)}
+            >
+              {bookmark.name}
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+
+
+
 </div>
 
 
 
-  {showBookmarkSelector && (
-
-  <div
-  
-  ref={bookmarkSelectorRef}
-   className="asdasd absolut left-[30px] z-50 mt-1 bg-gray-100 rounded-md  w-[360px]  border border-gray-300"> {/* Adjust width as needed */}
-    <div         
-
-    className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-      {displayBookmarkSlice.map((bookmark, index) => (
-        <div 
-          key={bookmark.id}
-          className={`block w-full p-2 text-sm text-left 
-          ${index !== displayBookmarkSlice.length - 1 ? 'border-b' : ''} cursor-pointer hover:bg-gray-200 `}
-          onClick={() => handleAddToBookmark(bookmark.b_id)}
-          role="menuitem"
-        >
-          {bookmark.name}
-        </div>
-      ))}
-    </div>
-  </div>
-)}
-
-
-  
 
   </div>
   
@@ -1770,12 +1874,14 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
                       currentRows.map((row, index) => (
                         <>
                           <tr
+                              onClick={(event) => handleRowInteraction(row, event, index)}
+
                         //  onclick ={() => handleRowClick(row.query_id)}
                             key={row.query_id}
                             className={`hover:bg-[#f3f4f6]   
                           cursor-pointer 
                            ${selectedRows.includes(row) ? 'bg-[#e2e8f0]' : ''}`}
-                            onClick={(event) => handleSelectRow(row, event)}
+                            //  onClick={(event) => handleSelectRow(row, event, index)}
 
                             onMouseDown={(e) => handleRowClick(e, row.query_id)}
                             draggable={selectedRows.includes(row)}
@@ -1790,23 +1896,23 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
 
 </td>
 
-                            {/* <td
-                             
-                              className="cursor-pointer whitespace-nowrap"
-                            >
-                              {filteredData.some(item => !item.noDataIndicator) && (
-                                expandedRowId === row.query_id ? (
-                                  <FaChevronUp size={16}  onClick={() => handleRowClick(row.query_id)} className="inline mr-2 transition-transform duration-200 text-blue"
-                                    style={{ transform: expandedRowId === row.query_id ? 'scale(1.1)' : 'scale(1)' }} />
-                                ) : (
-                                  <FaChevronDown  size={16} onClick={() => handleRowClick(row.query_id)}  className="inline mr-2 transition-transform duration-200 text-blue"
-                                    style={{ transform: expandedRowId === row.query_id ? 'scale(1.1)' : 'scale(1)' }} />
-                                )
-                              )}
-                            </td> */}
+<td
+  className="whitespace-nowrap"
+  onMouseEnter={() => row.query.length > 15 ? setHoveredRowId(row.query_id) : null}
+  onMouseLeave={() => setHoveredRowId(null)}
+>
+  {truncateText(row.query)}
+  {hoveredRowId === row.query_id && (
+    <div 
+      className="relative  z-10 p-2 mt-1 text-sm text-white w-[70%] bg-black rounded-md"
+      style={{ left: '0%', bottom: '-30%' }}
+    >
+      {row.query}
+    </div>
+  )}
+</td>
 
 
-                            <td className=" whitespace-nowrap">{row.query}</td>
                             <td className="relative whitespace-nowrap">
                               {row.rank === 101 ? '-' : row.rank}
                               {row.rank_difference != null && row.rank_difference != 0 && (
