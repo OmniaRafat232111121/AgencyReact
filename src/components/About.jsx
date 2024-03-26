@@ -39,7 +39,6 @@ import { FiPlus } from "react-icons/fi";
 import { createBookmark } from '../redux/lib/createGroup';
 import BookmarkDetails from './Bookmark/BookmarkDetails';
 import useOutsideClick from '../hook/useOutsideClick';
-import Confirmation from './Modal/Confirmation';
 
 const Projectranks = () => {
   const navigate = useNavigate();
@@ -901,66 +900,131 @@ const extractDomainName = (url) => {
 
   const [lastSelectedIndex, setLastSelectedIndex] = useState(null); // Track the last selected row's index
 
-  const handleRowInteraction = (row, event, rowIndex) => {
+  // const handleRowInteraction = (row, event, rowIndex) => {
    
+  //   const currentId = row.query_id;
+
+  // if (event.shiftKey && lastSelectedIndex !== null) {
+  //   const start = Math.min(lastSelectedIndex, rowIndex);
+  //   const end = Math.max(lastSelectedIndex, rowIndex);
+  //   const rowsInRange = filteredData.slice(start, end + 1);
+  //   const rowIdsInRange = rowsInRange.map(r => r.query_id);
+
+  //   // Determine if we are selecting or deselecting based on the state of the first clicked row
+  //   const isSelecting = !checkedRows.includes(currentId);
+
+  //   // Update checkedRows
+  //   let newCheckedRows;
+  //   if (isSelecting) {
+  //     // Add all rowIdsInRange to checkedRows
+  //     newCheckedRows = [...new Set([...checkedRows, ...rowIdsInRange])];
+  //   } else {
+  //     // Remove all rowIdsInRange from checkedRows
+  //     newCheckedRows = checkedRows.filter(id => !rowIdsInRange.includes(id));
+  //   }
+  //   setCheckedRows(newCheckedRows);
+
+  //   // Update selectedRows similarly
+  //   let newSelectedRows;
+  //   if (isSelecting) {
+  //     // Add all rows in the range to selectedRows
+  //     newSelectedRows = [...new Set([...selectedRows, ...rowsInRange])];
+  //   } else {
+  //     // Remove all rows in the range from selectedRows
+  //     newSelectedRows = selectedRows.filter(selectedRow => !rowIdsInRange.includes(selectedRow.query_id));
+  //   }
+  //   setSelectedRows(newSelectedRows);
+  //   } 
+  //   else if (event.ctrlKey || event.metaKey) {
+  //     // Ctrl/Cmd key is pressed, toggle the row selection
+  //     const isSelected = selectedRows.some(r => r.query_id === currentId);
+  //     const isChecked = checkedRows.includes(currentId);
+  
+  //     if (isSelected) {
+  //       setSelectedRows(prevSelectedRows => prevSelectedRows.filter(r => r.query_id !== currentId));
+  //     } else {
+  //       setSelectedRows(prevSelectedRows => [...prevSelectedRows, row]);
+  //     }
+  
+  //     // Toggle checked state based on whether it's already checked
+  //     if (isChecked) {
+  //       setCheckedRows(prevCheckedRows => prevCheckedRows.filter(id => id !== currentId));
+  //     } else {
+  //       setCheckedRows(prevCheckedRows => [...prevCheckedRows, currentId]);
+  //     }
+  //   } else {
+  //     // No modifier key is pressed, select only the clicked row
+  //     setSelectedRows([row]);
+  //   }
+  
+  //   // Update the lastSelectedIndex with the current row index
+  //   setLastSelectedIndex(rowIndex);
+  // };
+
+  const handleRowInteraction = (row, event, rowIndex) => {
     const currentId = row.query_id;
 
-  if (event.shiftKey && lastSelectedIndex !== null) {
-    const start = Math.min(lastSelectedIndex, rowIndex);
-    const end = Math.max(lastSelectedIndex, rowIndex);
-    const rowsInRange = filteredData.slice(start, end + 1);
-    const rowIdsInRange = rowsInRange.map(r => r.query_id);
+    // If Shift key is pressed, handle range selection
+    if (event.shiftKey && lastSelectedIndex !== null) {
+        const start = Math.min(lastSelectedIndex, rowIndex);
+        const end = Math.max(lastSelectedIndex, rowIndex);
+        const rowsInRange = filteredData.slice(start, end + 1);
+        const rowIdsInRange = rowsInRange.map(r => r.query_id);
+        const isSelecting = !checkedRows.includes(currentId);
 
-    // Determine if we are selecting or deselecting based on the state of the first clicked row
-    const isSelecting = !checkedRows.includes(currentId);
+        let newCheckedRows;
+        if (isSelecting) {
+            newCheckedRows = [...new Set([...checkedRows, ...rowIdsInRange])];
+        } else {
+            newCheckedRows = checkedRows.filter(id => !rowIdsInRange.includes(id));
+        }
+        setCheckedRows(newCheckedRows);
 
-    // Update checkedRows
-    let newCheckedRows;
-    if (isSelecting) {
-      // Add all rowIdsInRange to checkedRows
-      newCheckedRows = [...new Set([...checkedRows, ...rowIdsInRange])];
-    } else {
-      // Remove all rowIdsInRange from checkedRows
-      newCheckedRows = checkedRows.filter(id => !rowIdsInRange.includes(id));
-    }
-    setCheckedRows(newCheckedRows);
-
-    // Update selectedRows similarly
-    let newSelectedRows;
-    if (isSelecting) {
-      // Add all rows in the range to selectedRows
-      newSelectedRows = [...new Set([...selectedRows, ...rowsInRange])];
-    } else {
-      // Remove all rows in the range from selectedRows
-      newSelectedRows = selectedRows.filter(selectedRow => !rowIdsInRange.includes(selectedRow.query_id));
-    }
-    setSelectedRows(newSelectedRows);
+        let newSelectedRows;
+        if (isSelecting) {
+            newSelectedRows = [...new Set([...selectedRows, ...rowsInRange])];
+        } else {
+            newSelectedRows = selectedRows.filter(selectedRow => !rowIdsInRange.includes(selectedRow.query_id));
+        }
+        setSelectedRows(newSelectedRows);
     } 
+    // If Ctrl/Cmd key is pressed, toggle individual row selection
     else if (event.ctrlKey || event.metaKey) {
-      // Ctrl/Cmd key is pressed, toggle the row selection
-      const isSelected = selectedRows.some(r => r.query_id === currentId);
-      const isChecked = checkedRows.includes(currentId);
-  
-      if (isSelected) {
-        setSelectedRows(prevSelectedRows => prevSelectedRows.filter(r => r.query_id !== currentId));
-      } else {
-        setSelectedRows(prevSelectedRows => [...prevSelectedRows, row]);
-      }
-  
-      // Toggle checked state based on whether it's already checked
-      if (isChecked) {
-        setCheckedRows(prevCheckedRows => prevCheckedRows.filter(id => id !== currentId));
-      } else {
-        setCheckedRows(prevCheckedRows => [...prevCheckedRows, currentId]);
-      }
-    } else {
-      // No modifier key is pressed, select only the clicked row
-      setSelectedRows([row]);
+        const isSelected = selectedRows.some(r => r.query_id === currentId);
+        const isChecked = checkedRows.includes(currentId);
+
+        if (isSelected) {
+            setSelectedRows(prevSelectedRows => prevSelectedRows.filter(r => r.query_id !== currentId));
+        } else {
+            setSelectedRows(prevSelectedRows => [...prevSelectedRows, row]);
+        }
+
+        if (isChecked) {
+            setCheckedRows(prevCheckedRows => prevCheckedRows.filter(id => id !== currentId));
+        } else {
+            setCheckedRows(prevCheckedRows => [...prevCheckedRows, currentId]);
+        }
+    } 
+    // Handle simple click
+    else {
+        // Toggle only the clicked row
+        setSelectedRows([row]);
+
+        // Here, you toggle the expanded state for the row
+        // If the row is already expanded, collapse it, and vice versa
+        if (expandedRowId === currentId) {
+            setExpandedRowId(null); // Collapse the row
+        } else {
+            setExpandedRowId(currentId); // Expand the row to show tabs or details
+        }
     }
-  
-    // Update the lastSelectedIndex with the current row index
-    setLastSelectedIndex(rowIndex);
-  };
+
+    // Update the lastSelectedIndex with the current row index, but only if it's not a simple click
+    // This prevents interference with the logic for expanding/collapsing rows on simple clicks
+    if (event.shiftKey || event.ctrlKey || event.metaKey) {
+        setLastSelectedIndex(rowIndex);
+    }
+};
 
   const handleDragStart = (e) => {
     // Create a "ghost" element to represent the drag image
@@ -1427,15 +1491,6 @@ useOutsideClick(bookmarkSelectorRef, closeBookmarkSelector);
   return (
     <>
 
-{isDialogOpen && (
-  <Confirmation
-    isOpen={isDialogOpen}
-    onClose={cancelDeletion}
-    onConfirm={confirmDeletion}
-    message="Are you sure you want to delete this query?"
-    isDeleting={isDeleting}
-  />
-)}
 
 
       {isPopupVisible && (
@@ -1744,13 +1799,13 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
   </div>
   
 <div>
-{selectedTargetUrl && (
+{/* {selectedTargetUrl && (
     <div className="font-bold">
       <h3>Selected Target URL:
         <span className="ml-2 text-blue-600">{selectedTargetUrl.label || selectedTargetUrl}</span>
       </h3>
     </div>
-  )}
+  )} */}
 </div>
 </div>
 
@@ -1890,7 +1945,6 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
                             className={`hover:bg-[#f3f4f6]   
                           cursor-pointer 
                            ${selectedRows.includes(row) ? 'bg-[#e2e8f0]' : ''}`}
-                            //  onClick={(event) => handleSelectRow(row, event, index)}
 
                             onMouseDown={(e) => handleRowClick(e, row.query_id)}
                             draggable={selectedRows.includes(row)}
@@ -2347,5 +2401,6 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
 };
 
 export default Projectranks;
+
 
 
