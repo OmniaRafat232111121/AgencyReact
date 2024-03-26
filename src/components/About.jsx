@@ -39,6 +39,7 @@ import { FiPlus } from "react-icons/fi";
 import { createBookmark } from '../redux/lib/createGroup';
 import BookmarkDetails from './Bookmark/BookmarkDetails';
 import useOutsideClick from '../hook/useOutsideClick';
+import Confirmation from './Modal/Confirmation';
 
 const Projectranks = () => {
   const navigate = useNavigate();
@@ -395,30 +396,44 @@ const truncateText = (text, maxLength = 15) => {
     'All Sources',
     ...new Set(tableData.map((item) => item.target_url.replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/$/, '')))
   ];
+  
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deletingQueryId, setDeletingQueryId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false); // State t
+  const confirmDeletion = async () => {
+    if (!deletingQueryId) return; // Guard clause in case deletingQueryId is null
+  
+    setIsDeleting(true); // Indicate that deletion is in progress
+    try {
+      await dispatch(deleteProject(deletingQueryId)).unwrap();
+      setFilteredData(currentData => currentData.filter(rank => rank.query_id !== deletingQueryId));
+      toast.info('Rank deleted successfully');
+    } catch (error) {
+      console.error('Error deleting rank:', error);
+      toast.error(`An error occurred: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsDialogOpen(false); // Close the dialog regardless of the outcome
+      setDeletingQueryId(null); // Reset the deletingQueryId
+      setIsDeleting(false); // Reset the deletion indicator
+    }
+  };
+  
+  const cancelDeletion = () => {
+    setIsDialogOpen(false);
+    setDeletingQueryId(null);
+  };
   const handleDeleteButtonClick = (query_id) => {
-    console.log(query_id)
-    dispatch(deleteProject(query_id))
-      .unwrap()
-      .then(() => {
-        setFilteredData(currentData =>
-          currentData.filter(rank => rank.query_id !== query_id)
-        );
-        toast.info('Rank deleted successfully');
-      })
-      .catch((error) => {
-
-        console.error('Error deleting rank:', error);
-
-        toast.error(`An error occurred: ${error?.message || 'Unknown error'}`);
-      });
+    setDeletingQueryId(query_id);
+    setIsDialogOpen(true);
+  
   };
 
 
   const handleUpdateButtonClick = async (event, userId, query_id, project_id) => {
+    
     event.stopPropagation();
-
+    setTotalUpdates(prev => prev + 1); // Increment total updates
     setShowProgressBar(true);
-    setTotalUpdates(prev => prev + 1);
   
     let requestSuccessful = false; // Flag to indicate whether the request was successful
     const retryLimit = 5; // Reasonable retry limit
@@ -444,9 +459,9 @@ const truncateText = (text, maxLength = 15) => {
             const newData = [updatedItem, ...currentData.slice(0, updatedItemIndex), ...currentData.slice(updatedItemIndex + 1)];
             return newData;
         });
+        setCompletedUpdates(prev => prev + 1);
 
           toast.success(`${response.data.query} update successful`);
-          setCompletedUpdates(prev => prev + 1);
             
                 requestSuccessful = true; // Mark as successful to prevent retries
             } else {
@@ -480,52 +495,37 @@ const truncateText = (text, maxLength = 15) => {
     await makeRequest(); // Start the request process
 };
 
-
 const handleBulkUpdate = async () => {
-  console.log("userId:", userId, "projectId:", projectId, "checkedRows:", checkedRows);
-  console.log("Number of queries selected for update:", checkedRows.length);
-
   if (!userId || !projectId || checkedRows.length === 0) {
     console.error("Missing userId, projectId, or no rows selected for bulk update.");
     return;
   }
 
-  // Set the total number of updates to the length of checkedRows
-  setTotalUpdates(checkedRows.length);
+  setTotalUpdates(checkedRows.length - 1);
+  console.log(checkedRows.length)
+  setShowProgressBar(true); // Show progress bar at the start
+  let completed = 0;
+  let errors = 0;
 
-  // Reset the completed updates and error counts
-  setCompletedUpdates(0);
-  setUpdateErrors(0);
+  // Process each update in sequence (or in parallel, based on your need)
+  for (const queryId of checkedRows) {
+    try {
+      // Simulate update operation
+      await handleUpdateButtonClick({ stopPropagation: () => {} }, userId, queryId, projectId);
+      completed++;
+    } catch (error) {
+      console.error(`Update failed for ${queryId}:`, error);
+      errors++;
+    } finally {
+      setCompletedUpdates(completed);
+      setUpdateErrors(errors);
+    }
+  }
 
-  // Show the progress bar
-  setShowProgressBar(true);
-  
-  
-  const updatePromises = checkedRows.map((queryId) => 
-    handleUpdateButtonClick({ stopPropagation: () => {} }, userId, queryId, projectId)
-  );
-
-
-  await Promise.allSettled(updatePromises).then((results) => {
-    const successfulUpdates = results.filter((result) => result.status === 'fulfilled');
-    const errors = results.filter((result) => result.status === 'rejected');
-
-    // Update the state with the number of successful updates and errors
-    setCompletedUpdates(successfulUpdates.length);
-    console.log(completedUpdates)
-    setUpdateErrors(errors.length);
-    
-  console.log(totalUpdates)
-    console.log(`Bulk update results:`, results);
-    console.log(`Successful updates: ${successfulUpdates.length}, Errors: ${errors.length}`);
-  });
-
-  // Hide the progress bar after processing
   setShowProgressBar(false);
-
-  // Reset checked rows
-  setCheckedRows([]);
+  setCheckedRows([]); // Reset selected rows if necessary
 };
+
 
 
 
@@ -1423,10 +1423,19 @@ const closeBookmarkSelector = () => {
 
 // Use the hook
 useOutsideClick(bookmarkSelectorRef, closeBookmarkSelector);
+
   return (
     <>
 
-
+{isDialogOpen && (
+  <Confirmation
+    isOpen={isDialogOpen}
+    onClose={cancelDeletion}
+    onConfirm={confirmDeletion}
+    message="Are you sure you want to delete this query?"
+    isDeleting={isDeleting}
+  />
+)}
 
 
       {isPopupVisible && (
@@ -1901,15 +1910,15 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
   onMouseEnter={() => row.query.length > 15 ? setHoveredRowId(row.query_id) : null}
   onMouseLeave={() => setHoveredRowId(null)}
 >
-  {truncateText(row.query)}
+  {/* {truncateText(row.query)}
   {hoveredRowId === row.query_id && (
     <div 
       className="relative  z-10 p-2 mt-1 text-sm text-white w-[70%] bg-black rounded-md"
-      style={{ left: '0%', bottom: '-30%' }}
-    >
+      style={{ left: '0%', bottom: '-30%' }} */}
+    {/* > */}
       {row.query}
-    </div>
-  )}
+    {/* </div> */}
+  {/* )} */}
 </td>
 
 
@@ -1991,8 +2000,8 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
                                     leaveFrom="transform opacity-100 scale-100"
                                     leaveTo="transform opacity-0 scale-95"
                                   >
-                                    <Menu.Items className="absolute top-[-30px] 
-    z-10 p-2 right-[32px]  w-[110px]
+                                    <Menu.Items className="absolute top-[-40px] 
+    z-10 p-2 right-[45px]  w-[110px]
     bg-white rounded-lg shadowmenu">
 
                                       {/* Update Button */}
@@ -2338,7 +2347,5 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
 };
 
 export default Projectranks;
-
-
 
 
