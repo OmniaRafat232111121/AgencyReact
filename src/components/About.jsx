@@ -427,11 +427,21 @@ const truncateText = (text, maxLength = 15) => {
   
   };
 
+  const handleUpdateButtonClick = async (userId, query_id, project_id, isPartOfBulk = false) => {
+    const updatePromises = checkedRows.map(queryId => handleUpdateButtonClick(userId, queryId, projectId, true));
+    const results = await Promise.allSettled(updatePromises);
 
-  const handleUpdateButtonClick = async (event, userId, query_id, project_id) => {
+    const successfulUpdates = results.filter(result => result.status === 'fulfilled').length;
+    const failedUpdates = results.length - successfulUpdates;
+
+    setCompletedUpdates(successfulUpdates);
+    setUpdateErrors(failedUpdates);
     
-    event.stopPropagation();
-    setTotalUpdates(prev => prev + 1); // Increment total updates
+    // Removed the event parameter since we're not using event.stopPropagation() here anymore
+    if (!isPartOfBulk) {
+        setTotalUpdates(prev => prev + 1); // Increment total updates only if not part of a bulk operation
+    }
+
     setShowProgressBar(true);
   
     let requestSuccessful = false; // Flag to indicate whether the request was successful
@@ -496,34 +506,68 @@ const truncateText = (text, maxLength = 15) => {
 
 const handleBulkUpdate = async () => {
   if (!userId || !projectId || checkedRows.length === 0) {
-    console.error("Missing userId, projectId, or no rows selected for bulk update.");
-    return;
+      console.error("Missing userId, projectId, or no rows selected for bulk update.");
+      return;
   }
 
-  setTotalUpdates(checkedRows.length - 1);
-  console.log(checkedRows.length)
-  setShowProgressBar(true); // Show progress bar at the start
-  let completed = 0;
-  let errors = 0;
+  // Directly set totalUpdates to the number of checked rows
+  setTotalUpdates(checkedRows.length);
+  setCompletedUpdates(0); // Reset completed updates to zero at the start
+  setShowProgressBar(true); // Ensure the progress bar is shown at the start of the bulk update
+  
+  // Since React state updates are asynchronous, we use a local variable to track the updates
+  let localCompleted = 0;
+  let localErrors = 0;
 
-  // Process each update in sequence (or in parallel, based on your need)
+  // Process each checked row
   for (const queryId of checkedRows) {
-    try {
-      // Simulate update operation
-      await handleUpdateButtonClick({ stopPropagation: () => {} }, userId, queryId, projectId);
-      completed++;
-    } catch (error) {
-      console.error(`Update failed for ${queryId}:`, error);
-      errors++;
-    } finally {
-      setCompletedUpdates(completed);
-      setUpdateErrors(errors);
-    }
+      try {
+          // Pass true for isPartOfBulk to avoid incrementing totalUpdates within the function
+          await handleUpdateButtonClick(userId, queryId, projectId, true);
+          localCompleted++;
+      } catch (error) {
+          console.error(`Update failed for ${queryId}:`, error);
+          localErrors++;
+      } finally {
+          // Use the function form of setState to ensure we're working with the most current state
+          setCompletedUpdates(prevCompleted => prevCompleted + 1);
+          setUpdateErrors(prevErrors => prevErrors + localErrors);
+      }
   }
 
-  setShowProgressBar(false);
-  setCheckedRows([]); // Reset selected rows if necessary
+  // After processing all updates, you might want to handle the completion state here
+  // For example, hiding the progress bar if needed
 };
+
+// const handleBulkUpdate = async () => {
+//   if (!userId || !projectId || checkedRows.length === 0) {
+//     console.error("Missing userId, projectId, or no rows selected for bulk update.");
+//     return;
+//   }
+
+//   setTotalUpdates(checkedRows.length-1);
+//   console.log(totalUpdates)
+//   setCompletedUpdates(0); // Reset completed updates to zero
+//   setShowProgressBar(true); // Show the progress bar
+//   let localCompleted = 0;
+
+//   for (const queryId of checkedRows) {
+//     try {
+//       // Simulate update operation
+//       await handleUpdateButtonClick({ stopPropagation: () => {} }, userId, queryId, projectId);
+//       localCompleted++;
+//       setCompletedUpdates(localCompleted); // Update state based on the local variable
+
+//       console.log(completedUpdates)
+//     } catch (error) {
+//       console.error(`Update failed for ${queryId}:`, error);
+//       setUpdateErrors(prevErrors => prevErrors + 1);
+//     }
+//   }
+//   setShowProgressBar(false); // Hide progress bar after all updates are processed
+// };
+
+
 
 
 
@@ -2063,7 +2107,7 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
   {({ active }) => (
     <div className=''>
       <button
-        onClick={(e) => handleUpdateButtonClick(e, userId, row.query_id, row.project)}
+        onClick={(e) => handleUpdateButtonClick( userId, row.query_id, row.project)}
         className={`rounded-lg flex items-center ${updatingRows[row.query_id] ? 'cursor-not-allowed' : ''}`}
         disabled={updatingRows[row.query_id]} // Disable the button when updatingRows for this query_id is true
       >
@@ -2401,6 +2445,5 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
 };
 
 export default Projectranks;
-
 
 
