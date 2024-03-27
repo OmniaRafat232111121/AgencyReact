@@ -1,6 +1,5 @@
 
 
-
 import React, { useEffect, useMemo, useState } from 'react';
 import DataTable from 'react-data-table-component';
 import Select from 'react-select';
@@ -435,71 +434,71 @@ const truncateText = (text, maxLength = 15) => {
   };
 
 
-  const handleUpdateButtonClick = async (event, userId, query_id, project_id) => {
+//   const handleUpdateButtonClick = async (event, userId, query_id, project_id) => {
     
-    event.stopPropagation();
-    setTotalUpdates(prev => prev + 1); // Increment total updates
-    setShowProgressBar(true);
+//     event.stopPropagation();
+//     // setTotalUpdates(prev => prev + 1); // Increment total updates
+//     setShowProgressBar(true);
   
-    let requestSuccessful = false; // Flag to indicate whether the request was successful
-    const retryLimit = 5; // Reasonable retry limit
-    let retryCount = 0;
+//     let requestSuccessful = false; // Flag to indicate whether the request was successful
+//     const retryLimit = 5; // Reasonable retry limit
+//     let retryCount = 0;
 
-    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+//     const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    const makeRequest = async () => {
-        if (requestSuccessful) return; // If already successful, no need to proceed
+//     const makeRequest = async () => {
+//         if (requestSuccessful) return; // If already successful, no need to proceed
 
-        try {
-            setUpdatingRows(prev => ({ ...prev, [query_id]: true }));
-            setIsUpdating(true);
+//         try {
+//             setUpdatingRows(prev => ({ ...prev, [query_id]: true }));
+//             setIsUpdating(true);
 
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/update-rank/${userId}/${query_id}/${project_id}/`, {});
+//             const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/update-rank/${userId}/${query_id}/${project_id}/`, {});
    
-            if (response.status === 200) {
+//             if (response.status === 200) {
 
-          setFilteredData(currentData => {
-            const updatedItemIndex = currentData.findIndex(item => item.query_id === query_id);
-            const updatedItem = { ...currentData[updatedItemIndex], ...response.data };
-            // Move the updated item to the top and reconstruct the array.
-            const newData = [updatedItem, ...currentData.slice(0, updatedItemIndex), ...currentData.slice(updatedItemIndex + 1)];
-            return newData;
-        });
-        setCompletedUpdates(prev => prev + 1);
+//           setFilteredData(currentData => {
+//             const updatedItemIndex = currentData.findIndex(item => item.query_id === query_id);
+//             const updatedItem = { ...currentData[updatedItemIndex], ...response.data };
+//             // Move the updated item to the top and reconstruct the array.
+//             const newData = [updatedItem, ...currentData.slice(0, updatedItemIndex), ...currentData.slice(updatedItemIndex + 1)];
+//             return newData;
+//         });
+//         setCompletedUpdates(prev => prev + 1);
 
-          toast.success(`${response.data.query} update successful`);
+//           toast.success(`${response.data.query} update successful`);
             
-                requestSuccessful = true; // Mark as successful to prevent retries
-            } else {
-                throw new Error('Update failed');
-            }
+//                 requestSuccessful = true; // Mark as successful to prevent retries
+//             } else {
+//                 throw new Error('Update failed');
+//             }
           
             
-        } catch (error) {
-            console.error('Error updating rank:', error);
+//         } catch (error) {
+//             console.error('Error updating rank:', error);
           
-            // if (error.response && [404, 500, 504].includes(error.response.status) && retryCount < retryLimit) {
-              if (error.response.status !== 200 && retryCount < retryLimit) {
+//             // if (error.response && [404, 500, 504].includes(error.response.status) && retryCount < retryLimit) {
+//               if (error.response.status !== 200 && retryCount < retryLimit) {
 
-                retryCount += 1;
-                console.log(`Retrying update... Attempt ${retryCount}`);
-                await wait(2000 * retryCount);
-                await makeRequest(); // Retry the request
-            } else {
-                toast.error(`An error occurred while updating the rank. Error status: ${error.response ? error.response.status : 'unknown'}`);
-                setUpdateErrors(prevErrors => prevErrors + 1);
-            }
-        } finally {
-            if (requestSuccessful || retryCount >= retryLimit) {
-                setUpdatingRows(prev => ({ ...prev, [query_id]: false }));
-                setIsUpdating(false);
+//                 retryCount += 1;
+//                 console.log(`Retrying update... Attempt ${retryCount}`);
+//                 await wait(2000 * retryCount);
+//                 await makeRequest(); // Retry the request
+//             } else {
+//                 toast.error(`An error occurred while updating the rank. Error status: ${error.response ? error.response.status : 'unknown'}`);
+//                 setUpdateErrors(prevErrors => prevErrors + 1);
+//             }
+//         } finally {
+//             if (requestSuccessful || retryCount >= retryLimit) {
+//                 setUpdatingRows(prev => ({ ...prev, [query_id]: false }));
+//                 setIsUpdating(false);
                 
-            }
-        }
-    };
+//             }
+//         }
+//     };
 
-    await makeRequest(); // Start the request process
-};
+//     await makeRequest(); // Start the request process
+// };
 
 // const handleBulkUpdate = async () => {
 //   if (!userId || !projectId || checkedRows.length === 0) {
@@ -533,45 +532,76 @@ const truncateText = (text, maxLength = 15) => {
 //   setShowProgressBar(false); // Hide progress bar after processing all updates
 // };
 
+/*+++++++++*/
 
-// const handleBulkUpdate = async () => {
-//   if (!userId || !projectId || checkedRows.length === 0) {
-//     console.error("Missing userId, projectId, or no rows selected for bulk update.");
-//     return;
-//   }
 
-//   // Show the progress bar at the start
-//   setShowProgressBar(true);
+//take bulk from any process 0 of 1 
 
-//   // Reset the states for a fresh operation
-//   setCompletedUpdates(0);
-//   setUpdateErrors(0);
-//   setTotalUpdates(checkedRows.length);
+const handleUpdateButtonClick = async (event, userId, query_id, project_id) => {
+    
+  event.stopPropagation();
+  setTotalUpdates(prev => prev + 1); // Increment total updates
+  setShowProgressBar(true);
 
-//   // Map each row to a promise that resolves with true for success or false for failure
-//   const updatePromises = checkedRows.map(queryId => {
-//     return handleUpdateButtonClick({ stopPropagation: () => {} }, userId, queryId, projectId)
-//       .then(() => true) // On success, resolve with true
-//       .catch(() => false); // On failure, resolve with false
-//   });
-//   setCompletedUpdates(prevCompleted => prevCompleted ); // Correct use of updater function
+  let requestSuccessful = false; // Flag to indicate whether the request was successful
+  const retryLimit = 5; // Reasonable retry limit
+  let retryCount = 0;
 
-//   // Wait for all promises to settle
-//   const results = await Promise.all(updatePromises);
+  const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-//   // Count successes and failures
-//   const completed = results.filter(result => result).length;
-//   console.log(completed)
-//   const errors = results.length - completed;
+  const makeRequest = async () => {
+      if (requestSuccessful) return; // If already successful, no need to proceed
 
-//   // Update the state with the final counts
-//   setCompletedUpdates(completed);
-//   setUpdateErrors(errors);
+      try {
+          setUpdatingRows(prev => ({ ...prev, [query_id]: true }));
+          setIsUpdating(true);
 
-//   // Hide the progress bar after processing all updates
-//   setShowProgressBar(false);
-// };
+          const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/update-rank/${userId}/${query_id}/${project_id}/`, {});
+ 
+          if (response.status === 200) {
 
+        setFilteredData(currentData => {
+          const updatedItemIndex = currentData.findIndex(item => item.query_id === query_id);
+          const updatedItem = { ...currentData[updatedItemIndex], ...response.data };
+          // Move the updated item to the top and reconstruct the array.
+          const newData = [updatedItem, ...currentData.slice(0, updatedItemIndex), ...currentData.slice(updatedItemIndex + 1)];
+          return newData;
+      });
+      setCompletedUpdates(prev => prev + 1);
+
+        toast.success(`${response.data.query} update successful`);
+          
+              requestSuccessful = true; // Mark as successful to prevent retries
+          } else {
+              throw new Error('Update failed');
+          }
+        
+          
+      } catch (error) {
+          console.error('Error updating rank:', error);
+        
+          // if (error.response && [404, 500, 504].includes(error.response.status) && retryCount < retryLimit) {
+            if (error.response.status !== 200 && retryCount < retryLimit) {
+
+              retryCount += 1;
+              console.log(`Retrying update... Attempt ${retryCount}`);
+              await wait(2000 * retryCount);
+              await makeRequest(); // Retry the request
+          } else {
+              toast.error(`An error occurred while updating the rank. Error status: ${error.response ? error.response.status : 'unknown'}`);
+              setUpdateErrors(prevErrors => prevErrors + 1);
+          }
+      } finally {
+          if (requestSuccessful || retryCount >= retryLimit) {
+              setUpdatingRows(prev => ({ ...prev, [query_id]: false }));
+              setIsUpdating(false);
+              
+          }
+      }
+  };
+
+  await makeRequest(); // Start the request process
+};
 
 
 const handleBulkUpdate = async () => {
@@ -587,6 +617,9 @@ const handleBulkUpdate = async () => {
   }
   // No need to manually hide the progress bar or reset states here if they're handled elsewhere post-operation
 };
+/****** */
+
+
 
 
 
