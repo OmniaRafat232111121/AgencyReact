@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useMemo, useState } from 'react';
 import DataTable from 'react-data-table-component';
 import Select from 'react-select';
@@ -7,6 +9,9 @@ import { format } from 'date-fns';
 import ClipLoader from "react-spinners/ClipLoader";
 import { ImSpinner11 } from "react-icons/im";
 import {
+  FaCopy ,
+  FaRegCopy,
+  FaChevronDown,
   FaFolder,FaEdit, FaEllipsisV,FaArrowUp,FaArrowDown ,
   FaChevronUp, FaRegFileAlt, FaLink, FaRegIdBadge, FaRegCalendarAlt, FaArrowLeft,
 } from 'react-icons/fa';
@@ -39,6 +44,7 @@ import { FiPlus } from "react-icons/fi";
 import { createBookmark } from '../redux/lib/createGroup';
 import BookmarkDetails from './Bookmark/BookmarkDetails';
 import useOutsideClick from '../hook/useOutsideClick';
+import Confirmation from './Modal/Confirmation';
 
 const Projectranks = () => {
   const navigate = useNavigate();
@@ -427,21 +433,11 @@ const truncateText = (text, maxLength = 15) => {
   
   };
 
-  const handleUpdateButtonClick = async (userId, query_id, project_id, isPartOfBulk = false) => {
-    const updatePromises = checkedRows.map(queryId => handleUpdateButtonClick(userId, queryId, projectId, true));
-    const results = await Promise.allSettled(updatePromises);
 
-    const successfulUpdates = results.filter(result => result.status === 'fulfilled').length;
-    const failedUpdates = results.length - successfulUpdates;
-
-    setCompletedUpdates(successfulUpdates);
-    setUpdateErrors(failedUpdates);
+  const handleUpdateButtonClick = async (event, userId, query_id, project_id) => {
     
-    // Removed the event parameter since we're not using event.stopPropagation() here anymore
-    if (!isPartOfBulk) {
-        setTotalUpdates(prev => prev + 1); // Increment total updates only if not part of a bulk operation
-    }
-
+    event.stopPropagation();
+    setTotalUpdates(prev => prev + 1); // Increment total updates
     setShowProgressBar(true);
   
     let requestSuccessful = false; // Flag to indicate whether the request was successful
@@ -506,68 +502,34 @@ const truncateText = (text, maxLength = 15) => {
 
 const handleBulkUpdate = async () => {
   if (!userId || !projectId || checkedRows.length === 0) {
-      console.error("Missing userId, projectId, or no rows selected for bulk update.");
-      return;
+    console.error("Missing userId, projectId, or no rows selected for bulk update.");
+    return;
   }
 
-  // Directly set totalUpdates to the number of checked rows
-  setTotalUpdates(checkedRows.length);
-  setCompletedUpdates(0); // Reset completed updates to zero at the start
-  setShowProgressBar(true); // Ensure the progress bar is shown at the start of the bulk update
-  
-  // Since React state updates are asynchronous, we use a local variable to track the updates
-  let localCompleted = 0;
-  let localErrors = 0;
+  setTotalUpdates(checkedRows.length - 1);
+  console.log(checkedRows.length)
+  setShowProgressBar(true); // Show progress bar at the start
+  let completed = 0;
+  let errors = 0;
 
-  // Process each checked row
+  // Process each update in sequence (or in parallel, based on your need)
   for (const queryId of checkedRows) {
-      try {
-          // Pass true for isPartOfBulk to avoid incrementing totalUpdates within the function
-          await handleUpdateButtonClick(userId, queryId, projectId, true);
-          localCompleted++;
-      } catch (error) {
-          console.error(`Update failed for ${queryId}:`, error);
-          localErrors++;
-      } finally {
-          // Use the function form of setState to ensure we're working with the most current state
-          setCompletedUpdates(prevCompleted => prevCompleted + 1);
-          setUpdateErrors(prevErrors => prevErrors + localErrors);
-      }
+    try {
+      // Simulate update operation
+      await handleUpdateButtonClick({ stopPropagation: () => {} }, userId, queryId, projectId);
+      completed++;
+    } catch (error) {
+      console.error(`Update failed for ${queryId}:`, error);
+      errors++;
+    } finally {
+      setCompletedUpdates(completed);
+      setUpdateErrors(errors);
+    }
   }
 
-  // After processing all updates, you might want to handle the completion state here
-  // For example, hiding the progress bar if needed
+  setShowProgressBar(false);
+  setCheckedRows([]); // Reset selected rows if necessary
 };
-
-// const handleBulkUpdate = async () => {
-//   if (!userId || !projectId || checkedRows.length === 0) {
-//     console.error("Missing userId, projectId, or no rows selected for bulk update.");
-//     return;
-//   }
-
-//   setTotalUpdates(checkedRows.length-1);
-//   console.log(totalUpdates)
-//   setCompletedUpdates(0); // Reset completed updates to zero
-//   setShowProgressBar(true); // Show the progress bar
-//   let localCompleted = 0;
-
-//   for (const queryId of checkedRows) {
-//     try {
-//       // Simulate update operation
-//       await handleUpdateButtonClick({ stopPropagation: () => {} }, userId, queryId, projectId);
-//       localCompleted++;
-//       setCompletedUpdates(localCompleted); // Update state based on the local variable
-
-//       console.log(completedUpdates)
-//     } catch (error) {
-//       console.error(`Update failed for ${queryId}:`, error);
-//       setUpdateErrors(prevErrors => prevErrors + 1);
-//     }
-//   }
-//   setShowProgressBar(false); // Hide progress bar after all updates are processed
-// };
-
-
 
 
 
@@ -943,132 +905,73 @@ const extractDomainName = (url) => {
 
 
   const [lastSelectedIndex, setLastSelectedIndex] = useState(null); // Track the last selected row's index
-
-  // const handleRowInteraction = (row, event, rowIndex) => {
-   
-  //   const currentId = row.query_id;
-
-  // if (event.shiftKey && lastSelectedIndex !== null) {
-  //   const start = Math.min(lastSelectedIndex, rowIndex);
-  //   const end = Math.max(lastSelectedIndex, rowIndex);
-  //   const rowsInRange = filteredData.slice(start, end + 1);
-  //   const rowIdsInRange = rowsInRange.map(r => r.query_id);
-
-  //   // Determine if we are selecting or deselecting based on the state of the first clicked row
-  //   const isSelecting = !checkedRows.includes(currentId);
-
-  //   // Update checkedRows
-  //   let newCheckedRows;
-  //   if (isSelecting) {
-  //     // Add all rowIdsInRange to checkedRows
-  //     newCheckedRows = [...new Set([...checkedRows, ...rowIdsInRange])];
-  //   } else {
-  //     // Remove all rowIdsInRange from checkedRows
-  //     newCheckedRows = checkedRows.filter(id => !rowIdsInRange.includes(id));
-  //   }
-  //   setCheckedRows(newCheckedRows);
-
-  //   // Update selectedRows similarly
-  //   let newSelectedRows;
-  //   if (isSelecting) {
-  //     // Add all rows in the range to selectedRows
-  //     newSelectedRows = [...new Set([...selectedRows, ...rowsInRange])];
-  //   } else {
-  //     // Remove all rows in the range from selectedRows
-  //     newSelectedRows = selectedRows.filter(selectedRow => !rowIdsInRange.includes(selectedRow.query_id));
-  //   }
-  //   setSelectedRows(newSelectedRows);
-  //   } 
-  //   else if (event.ctrlKey || event.metaKey) {
-  //     // Ctrl/Cmd key is pressed, toggle the row selection
-  //     const isSelected = selectedRows.some(r => r.query_id === currentId);
-  //     const isChecked = checkedRows.includes(currentId);
+  useEffect(() => {
+    console.log(expandedRowId); // This will log the updated state after changes.
+  }, [expandedRowId]);
   
-  //     if (isSelected) {
-  //       setSelectedRows(prevSelectedRows => prevSelectedRows.filter(r => r.query_id !== currentId));
-  //     } else {
-  //       setSelectedRows(prevSelectedRows => [...prevSelectedRows, row]);
-  //     }
-  
-  //     // Toggle checked state based on whether it's already checked
-  //     if (isChecked) {
-  //       setCheckedRows(prevCheckedRows => prevCheckedRows.filter(id => id !== currentId));
-  //     } else {
-  //       setCheckedRows(prevCheckedRows => [...prevCheckedRows, currentId]);
-  //     }
-  //   } else {
-  //     // No modifier key is pressed, select only the clicked row
-  //     setSelectedRows([row]);
-  //   }
-  
-  //   // Update the lastSelectedIndex with the current row index
-  //   setLastSelectedIndex(rowIndex);
-  // };
-
   const handleRowInteraction = (row, event, rowIndex) => {
+    
+   
     const currentId = row.query_id;
 
-    // If Shift key is pressed, handle range selection
-    if (event.shiftKey && lastSelectedIndex !== null) {
-        const start = Math.min(lastSelectedIndex, rowIndex);
-        const end = Math.max(lastSelectedIndex, rowIndex);
-        const rowsInRange = filteredData.slice(start, end + 1);
-        const rowIdsInRange = rowsInRange.map(r => r.query_id);
-        const isSelecting = !checkedRows.includes(currentId);
+  if (event.shiftKey && lastSelectedIndex !== null) {
+    const start = Math.min(lastSelectedIndex, rowIndex);
+    const end = Math.max(lastSelectedIndex, rowIndex);
+    const rowsInRange = filteredData.slice(start, end + 1);
+    const rowIdsInRange = rowsInRange.map(r => r.query_id);
 
-        let newCheckedRows;
-        if (isSelecting) {
-            newCheckedRows = [...new Set([...checkedRows, ...rowIdsInRange])];
-        } else {
-            newCheckedRows = checkedRows.filter(id => !rowIdsInRange.includes(id));
-        }
-        setCheckedRows(newCheckedRows);
+    // Determine if we are selecting or deselecting based on the state of the first clicked row
+    const isSelecting = !checkedRows.includes(currentId);
 
-        let newSelectedRows;
-        if (isSelecting) {
-            newSelectedRows = [...new Set([...selectedRows, ...rowsInRange])];
-        } else {
-            newSelectedRows = selectedRows.filter(selectedRow => !rowIdsInRange.includes(selectedRow.query_id));
-        }
-        setSelectedRows(newSelectedRows);
+    // Update checkedRows
+    let newCheckedRows;
+    if (isSelecting) {
+      // Add all rowIdsInRange to checkedRows
+      newCheckedRows = [...new Set([...checkedRows, ...rowIdsInRange])];
+    } else {
+      // Remove all rowIdsInRange from checkedRows
+      newCheckedRows = checkedRows.filter(id => !rowIdsInRange.includes(id));
+    }
+    setCheckedRows(newCheckedRows);
+
+    // Update selectedRows similarly
+    let newSelectedRows;
+    if (isSelecting) {
+      // Add all rows in the range to selectedRows
+      newSelectedRows = [...new Set([...selectedRows, ...rowsInRange])];
+    } else {
+      // Remove all rows in the range from selectedRows
+      newSelectedRows = selectedRows.filter(selectedRow => !rowIdsInRange.includes(selectedRow.query_id));
+    }
+    setSelectedRows(newSelectedRows);
     } 
-    // If Ctrl/Cmd key is pressed, toggle individual row selection
     else if (event.ctrlKey || event.metaKey) {
-        const isSelected = selectedRows.some(r => r.query_id === currentId);
-        const isChecked = checkedRows.includes(currentId);
-
-        if (isSelected) {
-            setSelectedRows(prevSelectedRows => prevSelectedRows.filter(r => r.query_id !== currentId));
-        } else {
-            setSelectedRows(prevSelectedRows => [...prevSelectedRows, row]);
-        }
-
-        if (isChecked) {
-            setCheckedRows(prevCheckedRows => prevCheckedRows.filter(id => id !== currentId));
-        } else {
-            setCheckedRows(prevCheckedRows => [...prevCheckedRows, currentId]);
-        }
-    } 
-    // Handle simple click
-    else {
-        // Toggle only the clicked row
-        setSelectedRows([row]);
-
-        // Here, you toggle the expanded state for the row
-        // If the row is already expanded, collapse it, and vice versa
-        if (expandedRowId === currentId) {
-            setExpandedRowId(null); // Collapse the row
-        } else {
-            setExpandedRowId(currentId); // Expand the row to show tabs or details
-        }
+      // Ctrl/Cmd key is pressed, toggle the row selection
+      const isSelected = selectedRows.some(r => r.query_id === currentId);
+      const isChecked = checkedRows.includes(currentId);
+  
+      if (isSelected) {
+        setSelectedRows(prevSelectedRows => prevSelectedRows.filter(r => r.query_id !== currentId));
+      } else {
+        setSelectedRows(prevSelectedRows => [...prevSelectedRows, row]);
+      }
+  
+      // Toggle checked state based on whether it's already checked
+      if (isChecked) {
+        setCheckedRows(prevCheckedRows => prevCheckedRows.filter(id => id !== currentId));
+      } else {
+        setCheckedRows(prevCheckedRows => [...prevCheckedRows, currentId]);
+      }
+    } else {
+      // No modifier key is pressed, select only the clicked row
+      setSelectedRows([row]);
+     
+    
     }
-
-    // Update the lastSelectedIndex with the current row index, but only if it's not a simple click
-    // This prevents interference with the logic for expanding/collapsing rows on simple clicks
-    if (event.shiftKey || event.ctrlKey || event.metaKey) {
-        setLastSelectedIndex(rowIndex);
-    }
-};
+  
+    // Update the lastSelectedIndex with the current row index
+    setLastSelectedIndex(rowIndex);
+  };
 
   const handleDragStart = (e) => {
     // Create a "ghost" element to represent the drag image
@@ -1468,7 +1371,7 @@ console.log(showBookmarkSelector)
 const [selectedOption, setSelectedOption] = useState(null);
 const options = [
   { value: 'update', label: 'Update query' },
-  { value: 'delete', label: 'Delete qery' },
+  { value: 'delete', label: 'Delete query' },
   { value: 'add', label: 'Add to Bookamrk', submenu: displayBookmarkSlice },
 
 ];
@@ -1479,9 +1382,20 @@ const [showMainOptions, setShowMainOptions] = useState(false);
 const handleChange = (selectedOption) => {
   setSelectedOption(selectedOption);
   if (selectedOption.value === 'add') {
-    setShowBookmarkSelector(true); // Show submenu for adding bookmarks
+    // Check if there are bookmarks available
+    if (displayBookmarkSlice.length === 0) {
+      // No bookmarks available, inform the user and prevent opening the bookmark selector
+      toast.info('No bookmarks available. Please create a bookmark first', {
+        position: "bottom-center",
+        autoClose: 5000,
+      });
+    } else {
+      // Bookmarks available, proceed to show the bookmark selector
+      setShowBookmarkSelector(true);
+    }
   } else {
-    setShowBookmarkSelector(false); // Hide submenu if not Add option
+    // If not the 'Add' option, proceed with the selected bulk action
+    setShowBookmarkSelector(false);
     handleBulkAction(selectedOption.value);
   }
 };
@@ -1531,10 +1445,78 @@ const closeBookmarkSelector = () => {
 
 // Use the hook
 useOutsideClick(bookmarkSelectorRef, closeBookmarkSelector);
+const fallbackCopyTextToClipboard = (text) => {
+  // Create a temporary textarea element
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  document.body.appendChild(textArea);
+  textArea.focus(); // Focus on the textarea
+  textArea.select(); // Select the text
+  
+  try {
+    // Try to execute the copy command
+    const successful = document.execCommand('copy');
+    if (successful) {
+      // Use the text variable dynamically in the toast message
+      toast.info(`Copied "${text}" to clipboard successfully`, {
+        position: "bottom-center",
+        autoClose: 5000
+      });
+    } else {
+      throw new Error('Copy command was unsuccessful');
+    }
+  } catch (err) {
+    console.error('Fallback: Oops, unable to copy', err);
+    toast.error("Failed to copy to clipboard.", {
+      position: "bottom-center",
+      autoClose: 5000
+    });
+  }
+  
+  document.body.removeChild(textArea); // Cleanup
+};
+const [copiedRows, setCopiedRows] = useState(new Set());
+
+
+const copyToClipboard = (text) => {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      // Use the text variable dynamically in the toast message
+      toast.info(`Copied "${text}" to clipboard successfully`, {
+        position: "bottom-center",
+        autoClose: 5000
+      });
+    }, (err) => {
+      console.error("Error copying text to clipboard: ", err);
+      toast.error("Error copying text to clipboard", {
+        position: "bottom-center",
+        autoClose: 5000
+      });
+    });
+  } else {
+    console.log("Clipboard API not available, using fallback.");
+    fallbackCopyTextToClipboard(text);
+  }
+};
+
+const handleToggleRow = (rowId, event) => {
+  event.stopPropagation(); // Prevent triggering row selection
+  // Toggle between the current row ID and null to expand/collapse
+  setExpandedRowId((currentExpandedRowId) => (currentExpandedRowId !== rowId ? rowId : null));
+};
 
   return (
     <>
 
+{isDialogOpen && (
+  <Confirmation
+    isOpen={isDialogOpen}
+    onClose={cancelDeletion}
+    onConfirm={confirmDeletion}
+    message="Are you sure you want to delete this query?"
+    isDeleting={isDeleting}
+  />
+)}
 
 
       {isPopupVisible && (
@@ -1804,33 +1786,67 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
       placeholder="Select Action"
       isSearchable={false}
     />
-    <button
+    {/* <button
       onClick={() => setShowMainOptions(true)}
       className={`w-[200px] text-white bg-blue rounded`}
     >
       Go
-    </button>
+    </button> */}
 
     
-
+{/* 
     {showBookmarkSelector && (
-      <div
-      ref={bookmarksRef} 
-       className={`absolute left-[5px]  z-50 mt-[50px] bg-white rounded-md w-[450px] border border-gray-300`}>
-        <div className="py-1">
-          {displayBookmarkSlice.map((bookmark, index) => (
-            <div 
-              key={bookmark.id}
-              className={`block w-full p-2 text-sm text-left 
-              ${index !== displayBookmarkSlice.length - 1 ? 'border-b' : ''} cursor-pointer hover:bg-gray-200`}
-              onClick={() => handleAddToBookmark(bookmark.b_id)}
-            >
-              {bookmark.name}
-            </div>
-          ))}
-        </div>
+  <div
+    ref={bookmarksRef}
+    className={`absolute left-[5px] z-50 mt-[50px] bg-white rounded-md w-[450px] border border-gray-300`}
+  >
+    {displayBookmarkSlice.length > 0 ? (
+      <div className="py-1">
+        {displayBookmarkSlice.map((bookmark, index) => (
+          <div
+            key={bookmark.id}
+            className={`block w-full p-2 text-sm text-left 
+            ${index !== displayBookmarkSlice.length - 1 ? 'border-b' : ''} cursor-pointer hover:bg-gray-200`}
+            onClick={() => handleAddToBookmark(bookmark.b_id)}
+          >
+            {bookmark.name}
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div className="p-2 text-sm text-center text-gray-500">
+        No bookmarks found.
       </div>
     )}
+  </div>
+)} */}
+{showBookmarkSelector && (
+  <div
+    ref={bookmarksRef}
+    className={`absolute left-[5px] z-50 mt-[50px] bg-white rounded-md w-[450px] border border-gray-300`}
+  >
+    {filteredBookmarks.length > 0 ? (
+      <div className="py-1">
+        {filteredBookmarks.map((bookmark, index) => (
+          <div
+            key={bookmark.id}
+            className={`block w-full p-2 text-sm text-left 
+            ${index !== filteredBookmarks.length - 1 ? 'border-b' : ''} cursor-pointer hover:bg-gray-200`}
+            onClick={() => handleAddToBookmark(bookmark.b_id)}
+          >
+            {bookmark.name}
+          </div>
+        ))}
+      </div>
+    ) : (
+      // Show a message when no bookmarks are available
+      <div className="p-2 text-sm text-center text-gray-500">
+        No bookmarks found.
+      </div>
+    )}
+  </div>
+)}
+
   </div>
 
 
@@ -1842,15 +1858,7 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
 
   </div>
   
-<div>
-{/* {selectedTargetUrl && (
-    <div className="font-bold">
-      <h3>Selected Target URL:
-        <span className="ml-2 text-blue-600">{selectedTargetUrl.label || selectedTargetUrl}</span>
-      </h3>
-    </div>
-  )} */}
-</div>
+
 </div>
 
 
@@ -1919,13 +1927,13 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
                 )}
               </div>
               <div className='border-2 border-gray-200 rounded-lg table-parent '>
-                <table ref={tableRef} className="min-w-full divide-y divide-gray-200 ">
+                <table 
+                 className="min-w-full divide-y divide-gray-200 ">
                   <thead className=" bg-gray-50">
 
                     <tr
                     >
-                      
-                          <th className="px-6 py-3 text-xs font-medium leading-4 tracking-wider text-gray-500 uppercase sticky-col-head">
+                         <th className="px-6 py-3 text-xs font-medium leading-4 tracking-wider text-gray-500 uppercase sticky-col-head">
   <input
     type="checkbox"
     onChange={handleSelectAllClick}
@@ -1934,6 +1942,9 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
 
 
                         </th>
+                       <th className="px-6 py-3 text-xs font-medium leading-4 tracking-wider text-gray-500 uppercase sticky-col-head">Details</th>
+
+                       
                     
 
                       <th className="text-xs font-medium tracking-wider text-gray-500 uppercase cursor-pointer " onClick={() => requestSort('query')}>
@@ -1984,7 +1995,6 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
                           <tr
                               onClick={(event) => handleRowInteraction(row, event, index)}
 
-                        //  onclick ={() => handleRowClick(row.query_id)}
                             key={row.query_id}
                             className={`hover:bg-[#f3f4f6]   
                           cursor-pointer 
@@ -1994,30 +2004,55 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
                             draggable={selectedRows.includes(row)}
                             onDragStart={handleDragStart}
                           >
-                            <td className="px-6 py-4 sticky-col whitespace-nowrap">
-                            <input
+            
+                                   <td className="px-6 py-4 sticky-col whitespace-nowrap checkbox-cell">
+  
+<input
   type="checkbox"
   checked={checkedRows.includes(row.query_id)}
-  onChange={(e) => handleSelectChange(e, row.query_id)}
+  onChange={(e) => {
+    e.stopPropagation(); 
+    handleSelectChange(e, row.query_id);
+  }}
 />
 
 </td>
+<td className="px-6 py-4 whitespace-nowrap">
+        <button onClick={(event) => handleToggleRow(row.query_id, event)} className="focus:outline-none">
+            {expandedRowId === row.query_id ? (
+                <FaChevronUp className="text-xl text-blue" /> // When row is expanded
+            ) : (
+                <FaChevronDown className="text-xl text-blue" /> // When row is not expanded
+            )}
+        </button>
+    </td>
+<td className="flex justify-center px-6 py-4 space-x-2 whitespace-nowrap">
+<button
+    onClick={(event) => {
+      event.stopPropagation(); // Prevent the event from propagating to the table row
+      copyToClipboard(row.query);
+    }}
+    title="Copy to clipboard"
+  >
+    {copiedRows.has(row.query_id) ? (
+      <FaCopy className="inline ml-2 cursor-pointer" />
+    ) : (
+      <FaRegCopy className="inline ml-2 cursor-pointer" />
+    )}
+  </button>
 
-<td
-  className="whitespace-nowrap"
-  onMouseEnter={() => row.query.length > 15 ? setHoveredRowId(row.query_id) : null}
-  onMouseLeave={() => setHoveredRowId(null)}
->
-  {/* {truncateText(row.query)}
-  {hoveredRowId === row.query_id && (
-    <div 
-      className="relative  z-10 p-2 mt-1 text-sm text-white w-[70%] bg-black rounded-md"
-      style={{ left: '0%', bottom: '-30%' }} */}
-    {/* > */}
-      {row.query}
-    {/* </div> */}
-  {/* )} */}
+{row.query.length > 15 ? (
+    <div className="tooltipcontainer">
+      <span className="tooltiptext">{row.query}</span>
+      <span>{row.query.substring(0, 15)}...</span>
+    </div>
+  ) : (
+    <span>{row.query}</span>
+  )}
+
+
 </td>
+
 
 
                             <td className="relative whitespace-nowrap">
@@ -2107,7 +2142,7 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
   {({ active }) => (
     <div className=''>
       <button
-        onClick={(e) => handleUpdateButtonClick( userId, row.query_id, row.project)}
+        onClick={(e) => handleUpdateButtonClick(e, userId, row.query_id, row.project)}
         className={`rounded-lg flex items-center ${updatingRows[row.query_id] ? 'cursor-not-allowed' : ''}`}
         disabled={updatingRows[row.query_id]} // Disable the button when updatingRows for this query_id is true
       >
