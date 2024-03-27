@@ -1,5 +1,6 @@
 
 
+
 import React, { useEffect, useMemo, useState } from 'react';
 import DataTable from 'react-data-table-component';
 import Select from 'react-select';
@@ -44,7 +45,7 @@ import { FiPlus } from "react-icons/fi";
 import { createBookmark } from '../redux/lib/createGroup';
 import BookmarkDetails from './Bookmark/BookmarkDetails';
 import useOutsideClick from '../hook/useOutsideClick';
-import Confirmation from './Modal/Confirmation';
+// import Confirmation from './Modal/Confirmation';
 
 const Projectranks = () => {
   const navigate = useNavigate();
@@ -500,37 +501,92 @@ const truncateText = (text, maxLength = 15) => {
     await makeRequest(); // Start the request process
 };
 
+// const handleBulkUpdate = async () => {
+//   if (!userId || !projectId || checkedRows.length === 0) {
+//     console.error("Missing userId, projectId, or no rows selected for bulk update.");
+//     return;
+//   }
+
+//   // Set total updates to the number of checked rows
+//   setTotalUpdates(checkedRows.length);
+//   setShowProgressBar(true); // Show progress bar at the start
+//   let completed = 0;
+//   let errors = 0;
+
+//   // Process each update in sequence (or in parallel, based on your need)
+//   for (const queryId of checkedRows) {
+//     try {
+//       // Simulate update operation
+//       await handleUpdateButtonClick({ stopPropagation: () => {} }, userId, queryId, projectId);
+//       completed++;
+//     } catch (error) {
+//       console.error(`Update failed for ${queryId}:`, error);
+//       errors++;
+//     } finally {
+//       // Here, instead of setting states individually, accumulate counts and set state after loop
+//     }
+//   }
+
+//   // Update states after processing all updates
+//   setCompletedUpdates(completed);
+//   setUpdateErrors(errors);
+//   setShowProgressBar(false); // Hide progress bar after processing all updates
+// };
+
+
+// const handleBulkUpdate = async () => {
+//   if (!userId || !projectId || checkedRows.length === 0) {
+//     console.error("Missing userId, projectId, or no rows selected for bulk update.");
+//     return;
+//   }
+
+//   // Show the progress bar at the start
+//   setShowProgressBar(true);
+
+//   // Reset the states for a fresh operation
+//   setCompletedUpdates(0);
+//   setUpdateErrors(0);
+//   setTotalUpdates(checkedRows.length);
+
+//   // Map each row to a promise that resolves with true for success or false for failure
+//   const updatePromises = checkedRows.map(queryId => {
+//     return handleUpdateButtonClick({ stopPropagation: () => {} }, userId, queryId, projectId)
+//       .then(() => true) // On success, resolve with true
+//       .catch(() => false); // On failure, resolve with false
+//   });
+//   setCompletedUpdates(prevCompleted => prevCompleted ); // Correct use of updater function
+
+//   // Wait for all promises to settle
+//   const results = await Promise.all(updatePromises);
+
+//   // Count successes and failures
+//   const completed = results.filter(result => result).length;
+//   console.log(completed)
+//   const errors = results.length - completed;
+
+//   // Update the state with the final counts
+//   setCompletedUpdates(completed);
+//   setUpdateErrors(errors);
+
+//   // Hide the progress bar after processing all updates
+//   setShowProgressBar(false);
+// };
+
+
+
 const handleBulkUpdate = async () => {
-  if (!userId || !projectId || checkedRows.length === 0) {
-    console.error("Missing userId, projectId, or no rows selected for bulk update.");
-    return;
-  }
-
-  setTotalUpdates(checkedRows.length - 1);
-  console.log(checkedRows.length)
-  setShowProgressBar(true); // Show progress bar at the start
-  let completed = 0;
-  let errors = 0;
-
-  // Process each update in sequence (or in parallel, based on your need)
+  // Setup omitted for brevity
   for (const queryId of checkedRows) {
     try {
-      // Simulate update operation
       await handleUpdateButtonClick({ stopPropagation: () => {} }, userId, queryId, projectId);
-      completed++;
+      setCompletedUpdates(prevCompleted => prevCompleted + 1); // Correct use of updater function
     } catch (error) {
       console.error(`Update failed for ${queryId}:`, error);
-      errors++;
-    } finally {
-      setCompletedUpdates(completed);
-      setUpdateErrors(errors);
+      setUpdateErrors(prevErrors => prevErrors + 1); // Correct use of updater function
     }
   }
-
-  setShowProgressBar(false);
-  setCheckedRows([]); // Reset selected rows if necessary
+  // No need to manually hide the progress bar or reset states here if they're handled elsewhere post-operation
 };
-
 
 
 
@@ -1508,7 +1564,7 @@ const handleToggleRow = (rowId, event) => {
   return (
     <>
 
-{isDialogOpen && (
+{/* {isDialogOpen && (
   <Confirmation
     isOpen={isDialogOpen}
     onClose={cancelDeletion}
@@ -1516,7 +1572,7 @@ const handleToggleRow = (rowId, event) => {
     message="Are you sure you want to delete this query?"
     isDeleting={isDeleting}
   />
-)}
+)} */}
 
 
       {isPopupVisible && (
@@ -2480,5 +2536,6 @@ text-white p-3 rounded transition duration-150 ease-in-out lg:text-sm text-xs fo
 };
 
 export default Projectranks;
+
 
 
